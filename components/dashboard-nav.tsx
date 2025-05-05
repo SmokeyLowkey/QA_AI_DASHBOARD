@@ -36,6 +36,18 @@ export function DashboardNav({ isAdmin = false }: DashboardNavProps) {
       href: "/dashboard/employees",
     },
     {
+      title: "Teams",
+      href: "/dashboard/teams",
+    },
+    {
+      title: "Criteria",
+      href: "/dashboard/criteria",
+    },
+    {
+      title: "Company Users",
+      href: "/dashboard/company-users",
+    },
+    {
       title: "Admin",
       href: "/dashboard/admin",
       adminOnly: true,

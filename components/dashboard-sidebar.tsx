@@ -100,6 +100,22 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={pathname.startsWith("/dashboard/company-users")}
+                    tooltip="Company Users"
+                    className={pathname.startsWith("/dashboard/company-users") 
+                      ? "bg-blue-600 text-white rounded-md transition-all duration-200" 
+                      : "text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-all duration-200"}
+                  >
+                    <Link href="/dashboard/company-users">
+                      <Users className="h-4 w-4" />
+                      <span>Company Users</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroup>
             
@@ -250,6 +266,22 @@ export function DashboardSidebar({ role }: DashboardSidebarProps) {
                     <Link href="/dashboard/teams">
                       <Building className="h-4 w-4" />
                       <span>Teams</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                
+                <SidebarMenuItem>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={pathname.startsWith("/dashboard/company-users")}
+                    tooltip="Company Users"
+                    className={pathname.startsWith("/dashboard/company-users") 
+                      ? "bg-blue-600 text-white rounded-md transition-all duration-200" 
+                      : "text-gray-300 hover:bg-gray-800 hover:text-white rounded-md transition-all duration-200"}
+                  >
+                    <Link href="/dashboard/company-users">
+                      <Users className="h-4 w-4" />
+                      <span>Company Users</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

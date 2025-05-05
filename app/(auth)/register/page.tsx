@@ -48,22 +48,9 @@ export default function RegisterPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [invitation, setInvitation] = useState<string | null>(null);
   const [invitedEmail, setInvitedEmail] = useState<string | null>(null);
+  const [companyName, setCompanyName] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Check for invitation token and email in URL
-  useEffect(() => {
-    const token = searchParams.get("invitation");
-    const email = searchParams.get("email");
-    
-    if (token) {
-      setInvitation(token);
-    }
-    
-    if (email) {
-      setInvitedEmail(email);
-      form.setValue("email", email);
-    }
-  }, [searchParams]);
-
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -74,6 +61,45 @@ export default function RegisterPage() {
       confirmPassword: "",
     },
   });
+  
+  // Check for invitation token and email in URL
+  useEffect(() => {
+    const fetchInvitationDetails = async () => {
+      setIsLoading(true);
+      
+      // Check for both "invitation" and "token" parameters
+      const token = searchParams.get("invitation") || searchParams.get("token");
+      const email = searchParams.get("email");
+      
+      if (token) {
+        setInvitation(token);
+        console.log("Invitation token found:", token);
+        
+        // Fetch invitation details to get company name
+        try {
+          const response = await fetch(`/api/teams/invite/details?token=${token}`);
+          if (response.ok) {
+            const data = await response.json();
+            if (data.company) {
+              setCompanyName(data.company.name);
+              form.setValue("company", data.company.name);
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching invitation details:", error);
+        }
+      }
+      
+      if (email) {
+        setInvitedEmail(email);
+        form.setValue("email", email);
+      }
+      
+      setIsLoading(false);
+    };
+    
+    fetchInvitationDetails();
+  }, [searchParams, form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
@@ -161,93 +187,120 @@ export default function RegisterPage() {
         </Alert>
       )}
       
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="John Doe" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+      {isLoading ? (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+          <span className="ml-2">Loading invitation details...</span>
+        </div>
+      ) : (
+        <>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="john.doe@example.com" 
+                        type="email" 
+                        {...field} 
+                        disabled={!!invitedEmail}
+                        readOnly={!!invitedEmail}
+                      />
+                    </FormControl>
+                    {invitedEmail && (
+                      <FormDescription>
+                        Email is pre-filled from your invitation
+                      </FormDescription>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="company"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Company Name</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Acme Inc." 
+                        {...field} 
+                        disabled={!!companyName}
+                        readOnly={!!companyName}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {companyName 
+                        ? "Company name is pre-filled from your invitation" 
+                        : "Enter your company or organization name"}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Password</FormLabel>
+                    <FormControl>
+                      <Input placeholder="********" type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm Password</FormLabel>
+                    <FormControl>
+                      <Input placeholder="********" type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Registering..." : "Register"}
+              </Button>
+            </form>
+          </Form>
           
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Email</FormLabel>
-                <FormControl>
-                  <Input placeholder="john.doe@example.com" type="email" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="company"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company Name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Acme Inc." {...field} />
-                </FormControl>
-                <FormDescription>
-                  Enter your company or organization name
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Password</FormLabel>
-                <FormControl>
-                  <Input placeholder="********" type="password" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <FormField
-            control={form.control}
-            name="confirmPassword"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Confirm Password</FormLabel>
-                <FormControl>
-                  <Input placeholder="********" type="password" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          <Button type="submit" className="w-full" disabled={isSubmitting}>
-            {isSubmitting ? "Registering..." : "Register"}
-          </Button>
-        </form>
-      </Form>
-      
-      <p className="px-8 text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
-        <Link href="/login" className="hover:text-brand underline underline-offset-4">
-          Sign in
-        </Link>
-      </p>
+          <p className="px-8 text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link href="/login" className="hover:text-brand underline underline-offset-4">
+              Sign in
+            </Link>
+          </p>
+        </>
+      )}
     </div>
   );
 }
