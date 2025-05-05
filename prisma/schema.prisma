@@ -1,0 +1,411 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id                      String                   @id @default(cuid())
+  name                    String?
+  email                   String?                  @unique
+  emailVerified           DateTime?
+  image                   String?
+  role                    UserRole                 @default(USER)
+  password                String?
+  registrationStatus      RegStatus                @default(PENDING)
+  companyId               String?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  accounts                Account[]
+  auditLogs               AuditLog[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  createdCriteria         QACriteria[]
+  reviewedRecordings      Recording[]              @relation("ReviewedRecordings")
+  recordings              Recording[]
+  sessions                Session[]
+  teams                   TeamMember[]
+  editedTranscriptions    Transcription[]          @relation("editedTranscriptions")
+  sentInvitations         Invitation[]             @relation("SentInvitations")
+  company                 Company?                 @relation(fields: [companyId], references: [id])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Company {
+  id           String     @id @default(cuid())
+  name         String     @unique
+  s3FolderName String     @unique
+  description  String?
+  website      String?
+  industry     String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  employees    Employee[]
+  teams        Team[]
+  users        User[]
+  webhooks     Webhook[]
+}
+
+model Team {
+  id                String                  @id @default(cuid())
+  name              String
+  description       String?
+  companyId         String
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  employees         Employee[]
+  criteria          QACriteria[]
+  recordings        Recording[]
+  company           Company                 @relation(fields: [companyId], references: [id])
+  members           TeamMember[]
+  invitations       Invitation[]
+  criteriaTemplates TeamCriteriaAssignment[]
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  role      TeamRole @default(MEMBER)
+  userId    String
+  teamId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, teamId])
+}
+
+model Employee {
+  id                 String              @id @default(cuid())
+  name               String
+  email              String?             @unique
+  department         String?
+  position           String?
+  employeeId         String?
+  s3FolderName       String
+  hireDate           DateTime?
+  companyId          String
+  teamId             String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  company            Company             @relation(fields: [companyId], references: [id])
+  team               Team?               @relation(fields: [teamId], references: [id])
+  performanceMetrics PerformanceMetric[]
+  recordings         Recording[]
+
+  @@unique([companyId, employeeId])
+}
+
+model PerformanceMetric {
+  id                  String   @id @default(cuid())
+  employeeId          String
+  period              String
+  overallScore        Int
+  customerService     Int
+  productKnowledge    Int
+  communicationSkills Int
+  complianceAdherence Int
+  callCount           Int
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  employee            Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+// QA Criteria model - Updated for Phase 3
+model QACriteria {
+  id                        String                  @id @default(cuid())
+  name                      String
+  description               String?
+  createdById               String
+  teamId                    String?
+  isDefault                 Boolean                 @default(false)
+  isPublic                  Boolean                 @default(false)  // New field for Phase 3
+  customerServiceWeight     Int                     @default(25)
+  productKnowledgeWeight    Int                     @default(25)
+  communicationSkillsWeight Int                     @default(25)
+  complianceAdherenceWeight Int                     @default(25)
+  requiredPhrases           String[]
+  prohibitedPhrases         String[]
+  checklistItems            Json?                   // New field for checklist-style criteria
+  createdAt                 DateTime                @default(now())
+  updatedAt                 DateTime                @updatedAt
+  createdBy                 User                    @relation(fields: [createdById], references: [id])
+  team                      Team?                   @relation(fields: [teamId], references: [id])
+  recordings                Recording[]
+  categories                QACategory[]            // New relation for Phase 3
+  assignedTeams             TeamCriteriaAssignment[] // Teams this criteria is assigned to
+}
+
+// New model for QA categories - Phase 3
+model QACategory {
+  id          String     @id @default(cuid())
+  criteriaId  String
+  name        String
+  description String?
+  weight      Int
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  criteria    QACriteria @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
+  metrics     QAMetric[]
+
+  @@unique([criteriaId, name])
+}
+
+// New model for QA metrics - Phase 3
+model QAMetric {
+  id          String     @id @default(cuid())
+  categoryId  String
+  name        String
+  description String?
+  weight      Int
+  type        String
+  scaleMin    Int?
+  scaleMax    Int?
+  scaleLabels Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  category    QACategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([categoryId, name])
+}
+
+model Recording {
+  id            String         @id @default(cuid())
+  title         String
+  description   String?
+  s3Key         String         @unique
+  duration      Int?
+  fileSize      Int?
+  fileType      String?
+  uploadedById  String
+  employeeId    String?
+  teamId        String?
+  criteriaId    String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  reviewStatus  ReviewStatus   @default(PENDING)
+  reviewedById  String?
+  reviewNotes   String?
+  reviewedAt    DateTime?
+  analysis      Analysis?
+  criteria      QACriteria?    @relation(fields: [criteriaId], references: [id])
+  employee      Employee?      @relation(fields: [employeeId], references: [id])
+  reviewedBy    User?          @relation("ReviewedRecordings", fields: [reviewedById], references: [id])
+  team          Team?          @relation(fields: [teamId], references: [id])
+  uploadedBy    User           @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  scorecard     Scorecard?
+  transcription Transcription?
+
+  @@index([employeeId, createdAt])
+  @@index([uploadedById, createdAt])
+  @@index([teamId, createdAt])
+}
+
+// Transcription model - Updated for Phase 3
+model Transcription {
+  id           String              @id @default(cuid())
+  recordingId  String              @unique
+  text         String
+  status       Status              @default(PENDING)
+  originalText String?
+  editedAt     DateTime?
+  editedById   String?
+  speakerMap   Json?
+  sections     Json?
+  contextNotes String?             // New field for Phase 3
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  editedBy     User?               @relation("editedTranscriptions", fields: [editedById], references: [id])
+  recording    Recording           @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+  segments     TranscriptSegment[] // New relation for Phase 3
+}
+
+// New model for transcript segments - Phase 3
+model TranscriptSegment {
+  id              String        @id @default(cuid())
+  transcriptionId String
+  startTime       Float
+  endTime         Float
+  text            String
+  speakerId       String?
+  confidence      Float?
+  edited          Boolean       @default(false)
+  sectionType     String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  transcription   Transcription @relation(fields: [transcriptionId], references: [id], onDelete: Cascade)
+
+  @@index([transcriptionId, startTime])
+}
+
+model Analysis {
+  id          String    @id @default(cuid())
+  recordingId String    @unique
+  content     Json
+  status      Status    @default(PENDING)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  recording   Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+}
+
+model Scorecard {
+  id                  String    @id @default(cuid())
+  recordingId         String    @unique
+  overallScore        Int
+  customerService     Int
+  productKnowledge    Int
+  communicationSkills Int
+  complianceAdherence Int
+  notes               String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  recording           Recording @relation(fields: [recordingId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  resource   String
+  resourceId String
+  details    Json
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  actionUrl String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NotificationPreference {
+  id     String  @id @default(cuid())
+  userId String
+  type   String
+  email  Boolean @default(true)
+  inApp  Boolean @default(true)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type])
+}
+
+model Webhook {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  url       String
+  secret    String
+  events    String[]
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model Invitation {
+  id          String    @id @default(cuid())
+  email       String
+  token       String    @unique
+  teamId      String
+  role        UserRole  @default(USER)
+  expiresAt   DateTime
+  invitedById String
+  accepted    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  team        Team      @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  invitedBy   User      @relation("SentInvitations", fields: [invitedById], references: [id])
+}
+
+// New model for team criteria assignments
+model TeamCriteriaAssignment {
+  id         String     @id @default(cuid())
+  teamId     String
+  criteriaId String
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  team       Team       @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  criteria   QACriteria @relation(fields: [criteriaId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, criteriaId])
+  @@index([teamId])
+  @@index([criteriaId])
+}
+
+enum RegStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MANAGER
+}
+
+enum TeamRole {
+  MEMBER
+  MANAGER
+  ADMIN
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  NEEDS_REVISION
+  REJECTED
+}
+
+enum Status {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
