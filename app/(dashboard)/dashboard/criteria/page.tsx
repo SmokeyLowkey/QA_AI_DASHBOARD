@@ -62,12 +62,14 @@ export default async function CriteriaPage({
       return (
         <DashboardShell>
           <DashboardHeader heading="QA Criteria" text="Manage your quality assurance criteria templates.">
-            <Button asChild>
-              <Link href="/dashboard/criteria/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Criteria
-              </Link>
-            </Button>
+            {(session.user.role === "MANAGER" || session.user.role === "ADMIN") && (
+              <Button asChild>
+                <Link href="/dashboard/criteria/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Criteria
+                </Link>
+              </Button>
+            )}
           </DashboardHeader>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card className="col-span-full">
@@ -105,12 +107,14 @@ export default async function CriteriaPage({
       return (
         <DashboardShell>
           <DashboardHeader heading="QA Criteria" text="Manage your quality assurance criteria templates.">
-            <Button asChild>
-              <Link href="/dashboard/criteria/new">
-                <Plus className="mr-2 h-4 w-4" />
-                New Criteria
-              </Link>
-            </Button>
+            {(session.user.role === "MANAGER" || session.user.role === "ADMIN") && (
+              <Button asChild>
+                <Link href="/dashboard/criteria/new">
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Criteria
+                </Link>
+              </Button>
+            )}
           </DashboardHeader>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             <Card className="col-span-full">
@@ -200,7 +204,7 @@ export default async function CriteriaPage({
               </Link>
             </Button>
           )}
-          {!assignToTeam && (
+          {!assignToTeam && (session.user.role === "MANAGER" || session.user.role === "ADMIN") && (
             <Button asChild>
               <Link href={teamId ? `/dashboard/criteria/new?teamId=${teamId}` : "/dashboard/criteria/new"}>
                 <Plus className="mr-2 h-4 w-4" />
@@ -275,22 +279,34 @@ export default async function CriteriaPage({
                 </Button>
               ) : (
                 <div className="flex w-full justify-between">
-                  <Button variant="outline" asChild>
-                    <Link href={`/dashboard/criteria/${item.id}`}>
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </Link>
-                  </Button>
-                  <div className="flex space-x-2">
-                    {item._count.recordings === 0 && (
-                      <Button variant="outline" size="icon" className="text-destructive">
-                        <Trash className="h-4 w-4" />
+                  {/* Only managers and admins can edit criteria */}
+                  {(session.user.role === "MANAGER" || session.user.role === "ADMIN") ? (
+                    <>
+                      <Button variant="outline" asChild>
+                        <Link href={`/dashboard/criteria/${item.id}`}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </Link>
                       </Button>
-                    )}
-                    <Button variant="outline" size="icon">
-                      <Copy className="h-4 w-4" />
+                      <div className="flex space-x-2">
+                        {item._count.recordings === 0 && (
+                          <Button variant="outline" size="icon" className="text-destructive">
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button variant="outline" size="icon">
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <Button variant="outline" asChild className="w-full">
+                      <Link href={`/dashboard/criteria/${item.id}`}>
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        View Details
+                      </Link>
                     </Button>
-                  </div>
+                  )}
                 </div>
               )}
             </CardFooter>
@@ -310,12 +326,18 @@ export default async function CriteriaPage({
               </p>
             </CardContent>
             <CardFooter>
-              <Button asChild>
-                <Link href="/dashboard/criteria/new">
-                  <Plus className="mr-2 h-4 w-4" />
-                  New Criteria
-                </Link>
-              </Button>
+              {(session.user.role === "MANAGER" || session.user.role === "ADMIN") ? (
+                <Button asChild>
+                  <Link href="/dashboard/criteria/new">
+                    <Plus className="mr-2 h-4 w-4" />
+                    New Criteria
+                  </Link>
+                </Button>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Contact a manager to create new criteria templates.
+                </p>
+              )}
             </CardFooter>
           </Card>
         )}

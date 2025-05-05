@@ -71,6 +71,20 @@ export async function POST(req: NextRequest) {
     // Upload to S3
     await uploadToS3(file, key)
 
+    // Handle criteriaId - if it's "default", set it to undefined to use the default criteria
+    let finalCriteriaId = undefined;
+    if (criteriaId && criteriaId !== "default") {
+      // Verify criteria exists and belongs to user's company
+      const criteria = await db.qACriteria.findUnique({
+        where: { id: criteriaId },
+        select: { id: true }
+      });
+      
+      if (criteria) {
+        finalCriteriaId = criteriaId;
+      }
+    }
+
     // Create recording record in database
     const recording = await db.recording.create({
       data: {
@@ -82,7 +96,7 @@ export async function POST(req: NextRequest) {
         uploadedById: session.user.id,
         teamId: teamId || undefined,
         employeeId: employeeId || undefined,
-        criteriaId: criteriaId || undefined,
+        criteriaId: finalCriteriaId,
       },
     })
 

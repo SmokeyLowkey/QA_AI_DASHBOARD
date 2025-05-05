@@ -6,6 +6,7 @@ import { DashboardHeader } from "@/components/dashboard-header";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { Overview } from "@/components/overview";
 import { RecentRecordings } from "@/components/recent-recordings";
+import { DateTimeDisplay } from "@/components/date-time-display";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -167,12 +168,17 @@ export default async function DashboardPage() {
 
   return (
     <DashboardShell>
-      <DashboardHeader
-        heading="Dashboard"
-        text={`Welcome back, ${session.user.name || "User"}!`}
-      />
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+        <DashboardHeader
+          heading="Dashboard"
+          text={`Welcome back, ${session.user.name || "User"}!`}
+        />
+        <div className="mt-4 md:mt-0">
+          <DateTimeDisplay />
+        </div>
+      </div>
 
-      <div className="flex flex-row gap-4 overflow-x-auto pb-4">
+      <div className="flex flex-row gap-4 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-gray-800">
         <Card className="flex-1 min-w-[240px]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -266,7 +272,118 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mt-4">
+      {/* Quick Actions Section */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+        <Link href="/dashboard/recordings/new" className="group">
+          <Card className="h-full w-full transition-all hover:border-primary hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">New Recording</CardTitle>
+              <FileAudio className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">Upload a new call recording for analysis</p>
+            </CardContent>
+          </Card>
+        </Link>
+        
+        <Link href="/dashboard/criteria" className="group">
+          <Card className="h-full w-full transition-all hover:border-primary hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">QA Criteria</CardTitle>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors"
+              >
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                {session.user.role === "MANAGER" || session.user.role === "ADMIN" 
+                  ? "View and manage evaluation criteria" 
+                  : "View evaluation criteria"}
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
+        
+        <Link href="/dashboard/recordings" className="group">
+          <Card className="h-full w-full transition-all hover:border-primary hover:shadow-md">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">All Recordings</CardTitle>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors"
+              >
+                <rect width="7" height="7" x="3" y="3" rx="1" />
+                <rect width="7" height="7" x="14" y="3" rx="1" />
+                <rect width="7" height="7" x="14" y="14" rx="1" />
+                <rect width="7" height="7" x="3" y="14" rx="1" />
+              </svg>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">Browse and manage all your recordings</p>
+            </CardContent>
+          </Card>
+        </Link>
+        
+        {(session.user.role === "MANAGER" || session.user.role === "ADMIN") && (
+          <Link href="/dashboard/teams" className="group">
+            <Card className="h-full w-full transition-all hover:border-primary hover:shadow-md">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Teams</CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Manage your teams and members</p>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
+        
+        {session.user.role === "ADMIN" && (
+          <Link href="/dashboard/company-users" className="group">
+            <Card className="h-full w-full transition-all hover:border-primary hover:shadow-md">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Company Users</CardTitle>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+              </CardHeader>
+              <CardContent>
+                <p className="text-xs text-muted-foreground">Manage all users in your company</p>
+              </CardContent>
+            </Card>
+          </Link>
+        )}
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7 mt-6">
         <Card className="col-span-4">
           <CardHeader>
             <CardTitle>Recording Activity</CardTitle>

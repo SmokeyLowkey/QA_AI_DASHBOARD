@@ -105,7 +105,7 @@ export function UploadRecordingForm({
       title: "",
       description: "",
       employeeId: selectedEmployeeId || "",
-      criteriaId: criteria.find(c => c.isDefault)?.id || "",
+      criteriaId: criteria.find(c => c.isDefault)?.id || "default",
     },
   });
 
@@ -288,7 +288,7 @@ export function UploadRecordingForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Default Criteria</SelectItem>
+                    <SelectItem value="default">Default Criteria</SelectItem>
                     {criteria.map((criterion) => (
                       <SelectItem key={criterion.id} value={criterion.id}>
                         {criterion.name}
